@@ -5,6 +5,7 @@ namespace digiPot
 {
     public partial class Form1 : Form
     {
+        int Number_of_potentiometer { get; set; }
         public Form1()
         {
             InitializeComponent();
@@ -46,6 +47,7 @@ namespace digiPot
         SerialPort serial_port;
         private void Form1_Load(object sender, EventArgs e)
         {
+            Number_of_potentiometer = (int)potentiometer_number_numericUpDown.Value;
             serial_port = new SerialPort();
             serial_port.BaudRate = 9600;
             serial_port.DataBits = 8;
@@ -79,19 +81,109 @@ namespace digiPot
 
         private void up_button_Click(object sender, EventArgs e)
         {
-            byte[] message = new byte[1];
-            serial_port.Write(message, 0, message.Length);
+            Activate_nessesary_potentiometer();
+            Set_to_increase_resistance();
+            Send_pulse_signal(1);
+            
         }
 
         private void down_button_Click(object sender, EventArgs e)
         {
-            byte[] message = new byte[1];
-            serial_port.Write(message, 0, message.Length);
+            Activate_nessesary_potentiometer();
+            Set_to_decrease_resistance();
+            Send_pulse_signal(1);
         }
 
         private void set_resistance_button_Click(object sender, EventArgs e)
         {
             int resistance_to_set = Convert.ToInt32(resistance_textBox.Text);
+            Activate_nessesary_potentiometer();
+            Set_to_decrease_resistance();
+            Send_pulse_signal(100);
+            Set_to_increase_resistance();
+            Send_pulse_signal(resistance_to_set);
+        }
+
+
+        void Activate_nessesary_potentiometer()
+        {
+            switch(Number_of_potentiometer)
+            {
+                case 1:
+                    Activate_1_potentiometer();
+                    break;
+                case 2:
+                    Activate_2_potentiometer();
+                    break;
+                case 3:
+                    Activate_3_potentiometer();
+                    break;
+                case 4:
+                    Activate_4_potentiometer();
+                    break;
+            }
+        }
+
+        void Activate_1_potentiometer()
+        {
+            if (!serial_port.IsOpen) { return; }
+
+        }
+
+        void Activate_2_potentiometer()
+        {
+            if (!serial_port.IsOpen) { return; }
+
+        }
+
+        void Activate_3_potentiometer()
+        {
+            if (!serial_port.IsOpen) { return; }
+
+        }
+
+        void Activate_4_potentiometer()
+        {
+            if (!serial_port.IsOpen) { return; }
+
+        }
+
+        void Set_to_increase_resistance()
+        {
+            if (!serial_port.IsOpen) { return; }
+
+        }
+
+        void Set_to_decrease_resistance()
+        {
+            if (!serial_port.IsOpen) { return; }
+
+        }
+
+        private async void Send_pulse_signal(int number)
+        {
+            if (!serial_port.IsOpen) { return; }
+            byte[] message = new byte[1];
+            for(int i = 0; i < number; i++)
+            {
+                serial_port.Write(message, 0, message.Length);
+                await Task.Delay(1);
+            }
+            
+        }
+
+
+
+
+
+
+
+
+
+
+        private void potentiometer_number_numericUpDown_ValueChanged(object sender, EventArgs e)
+        {
+            Number_of_potentiometer = (int)potentiometer_number_numericUpDown.Value;
         }
     }
 

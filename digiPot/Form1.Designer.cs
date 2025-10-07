@@ -35,6 +35,8 @@
             resistance_textBox = new Only_positive_int_less_than_100_allowed_Textbox();
             label1 = new Label();
             set_resistance_button = new Button();
+            potentiometer_number_numericUpDown = new NumericUpDown();
+            ((System.ComponentModel.ISupportInitialize)potentiometer_number_numericUpDown).BeginInit();
             SuspendLayout();
             // 
             // Open_COM_port_button
@@ -58,7 +60,7 @@
             // up_button
             // 
             up_button.Enabled = false;
-            up_button.Location = new Point(407, 33);
+            up_button.Location = new Point(540, 35);
             up_button.Name = "up_button";
             up_button.Size = new Size(177, 23);
             up_button.TabIndex = 2;
@@ -69,7 +71,7 @@
             // down_button
             // 
             down_button.Enabled = false;
-            down_button.Location = new Point(407, 79);
+            down_button.Location = new Point(540, 81);
             down_button.Name = "down_button";
             down_button.Size = new Size(177, 23);
             down_button.TabIndex = 3;
@@ -105,11 +107,24 @@
             set_resistance_button.UseVisualStyleBackColor = true;
             set_resistance_button.Click += set_resistance_button_Click;
             // 
+            // potentiometer_number_numericUpDown
+            // 
+            potentiometer_number_numericUpDown.Location = new Point(355, 54);
+            potentiometer_number_numericUpDown.Maximum = new decimal(new int[] { 4, 0, 0, 0 });
+            potentiometer_number_numericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            potentiometer_number_numericUpDown.Name = "potentiometer_number_numericUpDown";
+            potentiometer_number_numericUpDown.ReadOnly = true;
+            potentiometer_number_numericUpDown.Size = new Size(120, 23);
+            potentiometer_number_numericUpDown.TabIndex = 7;
+            potentiometer_number_numericUpDown.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            potentiometer_number_numericUpDown.ValueChanged += potentiometer_number_numericUpDown_ValueChanged;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(800, 260);
+            Controls.Add(potentiometer_number_numericUpDown);
             Controls.Add(set_resistance_button);
             Controls.Add(label1);
             Controls.Add(resistance_textBox);
@@ -122,6 +137,7 @@
             Text = "Form1";
             FormClosing += Form1_FormClosing;
             Load += Form1_Load;
+            ((System.ComponentModel.ISupportInitialize)potentiometer_number_numericUpDown).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -135,5 +151,6 @@
         private Only_positive_int_less_than_100_allowed_Textbox resistance_textBox;
         private Label label1;
         private Button set_resistance_button;
+        private NumericUpDown potentiometer_number_numericUpDown;
     }
 }
