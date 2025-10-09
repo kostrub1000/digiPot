@@ -1,30 +1,57 @@
 using System;
 using System.IO.Ports;
+using System.Runtime.InteropServices;
 
 namespace digiPot
 {
     public partial class Form1 : Form
     {
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        internal static extern bool EscapeCommFunction(IntPtr hFile, uint dwFunc);
+
+        private const uint SETBREAK = 9;
+        private const uint CLRBREAK = 10;
+
         int Number_of_potentiometer { get; set; }
         public Form1()
         {
             InitializeComponent();
         }
 
-        bool port_is_closed = true;
-        private void Open_COM_port_button_Click(object sender, EventArgs e)
+        public static bool BeginBreak(IntPtr hComPort)
         {
-            if (port_is_closed)
+            return EscapeCommFunction(hComPort, SETBREAK);
+        }
+
+        public static bool EndBreak(IntPtr hComPort)
+        {
+            return EscapeCommFunction(hComPort, CLRBREAK);
+        }
+
+
+
+        bool ports_are_closed = true;
+        private void Open_COM_ports_button_Click(object sender, EventArgs e)
+        {
+            if (ports_are_closed)
             {
                 try
                 {
-                    serial_port.PortName = (available_COM_ports_comboBox.Text);
-                    serial_port.Open();
+                    serial_port_1.PortName = (available_COM_ports_comboBox1.Text);
+                    serial_port_1.Open();
+                    FileStream file_stream_1 = (FileStream)serial_port_1.BaseStream;
+                    serial_port_1_pointer = file_stream_1.SafeFileHandle.DangerousGetHandle();
+
+                    serial_port_2.PortName = (available_COM_ports_comboBox2.Text);
+                    serial_port_2.Open();
+                    FileStream file_stream_2 = (FileStream)serial_port_2.BaseStream;
+                    IntPtr serial_port_2_pointer = file_stream_2.SafeFileHandle.DangerousGetHandle();
+
                     set_resistance_button.Enabled = true;
                     up_button.Enabled = true;
                     down_button.Enabled = true;
-                    Open_COM_port_button.Text = "Закрыть COM порт";
-                    port_is_closed = false;
+                    Open_COM_ports_button.Text = "Закрыть COM порты";
+                    ports_are_closed = false;
                 }
                 catch (Exception ex)
                 {
@@ -33,26 +60,40 @@ namespace digiPot
             }
             else
             {
-                serial_port.Close();
+                serial_port_1.Close();
+                serial_port_2.Close();
+                serial_port_1_pointer = IntPtr.Zero;
+                serial_port_2_pointer = IntPtr.Zero;
                 set_resistance_button.Enabled = false;
                 up_button.Enabled = false;
                 down_button.Enabled = false;
-                Open_COM_port_button.Text = "Открыть COM порт";
-                port_is_closed = true;
+                Open_COM_ports_button.Text = "Открыть COM порты";
+                ports_are_closed = true;
             }
 
 
         }
 
-        SerialPort serial_port;
+        SerialPort serial_port_1;
+        SerialPort serial_port_2;
+        IntPtr serial_port_1_pointer = IntPtr.Zero;
+        IntPtr serial_port_2_pointer = IntPtr.Zero;
         private void Form1_Load(object sender, EventArgs e)
         {
             Number_of_potentiometer = (int)potentiometer_number_numericUpDown.Value;
-            serial_port = new SerialPort();
-            serial_port.BaudRate = 9600;
-            serial_port.DataBits = 8;
-            serial_port.StopBits = StopBits.One;
-            serial_port.Parity = Parity.None;
+            serial_port_1 = new SerialPort();
+            serial_port_1.BaudRate = 9600;
+            serial_port_1.DataBits = 8;
+            serial_port_1.StopBits = StopBits.One;
+            serial_port_1.Parity = Parity.None;
+            
+
+            serial_port_2 = new SerialPort();
+            serial_port_2.BaudRate = 9600;
+            serial_port_2.DataBits = 8;
+            serial_port_2.StopBits = StopBits.One;
+            serial_port_2.Parity = Parity.None;
+            
 
             string[] ports;
             try
@@ -60,48 +101,60 @@ namespace digiPot
                 ports = SerialPort.GetPortNames();
                 foreach (string s in ports)
                 {
-                    available_COM_ports_comboBox.Items.Add(s);
+                    available_COM_ports_comboBox1.Items.Add(s);
                 }
 
-                available_COM_ports_comboBox.SelectedIndex = 0;
+                available_COM_ports_comboBox1.SelectedIndex = 0;
+                available_COM_ports_comboBox2.SelectedIndex = 1;
             }
             catch
             {
-                MessageBox.Show("Нет ни одного COM порта");
+                MessageBox.Show("Должно быть как минимум два COM порта");
             }
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (serial_port.IsOpen)
+            if (serial_port_1.IsOpen)
             {
-                serial_port.Close();
+                serial_port_1.Close();
             }
+            if (serial_port_2.IsOpen)
+            {
+                serial_port_2.Close();
+            }
+            serial_port_1_pointer = IntPtr.Zero;
+            serial_port_2_pointer = IntPtr.Zero;
         }
 
+        bool com_port_operation_in_progress = false;
         private void up_button_Click(object sender, EventArgs e)
         {
+            if (!serial_port_1.IsOpen || !serial_port_2.IsOpen) { return; }
+            com_port_operation_in_progress = true;
             Activate_nessesary_potentiometer();
             Set_to_increase_resistance();
-            Send_pulse_signal(1);
+            Send_pulse_signal(1, true);
             
         }
 
         private void down_button_Click(object sender, EventArgs e)
         {
+            if (!serial_port_1.IsOpen || !serial_port_2.IsOpen) { return; }
             Activate_nessesary_potentiometer();
             Set_to_decrease_resistance();
-            Send_pulse_signal(1);
+            Send_pulse_signal(1, true);
         }
 
         private void set_resistance_button_Click(object sender, EventArgs e)
         {
+            if (!serial_port_1.IsOpen || !serial_port_2.IsOpen) { return; }
             int resistance_to_set = Convert.ToInt32(resistance_textBox.Text);
             Activate_nessesary_potentiometer();
             Set_to_decrease_resistance();
-            Send_pulse_signal(100);
+            Send_pulse_signal(100, false);
             Set_to_increase_resistance();
-            Send_pulse_signal(resistance_to_set);
+            Send_pulse_signal(resistance_to_set, true);
         }
 
 
@@ -126,48 +179,59 @@ namespace digiPot
 
         void Activate_1_potentiometer()
         {
-            if (!serial_port.IsOpen) { return; }
-
+            serial_port_1.RtsEnable = true;
+            serial_port_2.RtsEnable = false;
+            serial_port_1.DtrEnable = false;
+            serial_port_2.DtrEnable = false;
         }
 
         void Activate_2_potentiometer()
         {
-            if (!serial_port.IsOpen) { return; }
-
+            serial_port_1.RtsEnable = false;
+            serial_port_2.RtsEnable = true ;
+            serial_port_1.DtrEnable = false;
+            serial_port_2.DtrEnable = false;
         }
 
         void Activate_3_potentiometer()
         {
-            if (!serial_port.IsOpen) { return; }
-
+            serial_port_1.RtsEnable = false;
+            serial_port_2.RtsEnable = false;
+            serial_port_1.DtrEnable = true ;
+            serial_port_2.DtrEnable = false;
         }
 
         void Activate_4_potentiometer()
         {
-            if (!serial_port.IsOpen) { return; }
-
+            serial_port_1.RtsEnable = false;
+            serial_port_2.RtsEnable = false;
+            serial_port_1.DtrEnable = false;
+            serial_port_2.DtrEnable = true ;
         }
 
         void Set_to_increase_resistance()
         {
-            if (!serial_port.IsOpen) { return; }
-
+            BeginBreak(serial_port_1_pointer);
         }
 
         void Set_to_decrease_resistance()
         {
-            if (!serial_port.IsOpen) { return; }
-
+            EndBreak(serial_port_1_pointer);
         }
 
-        private async void Send_pulse_signal(int number)
+        private async void Send_pulse_signal(int number, bool last_command)
         {
-            if (!serial_port.IsOpen) { return; }
-            byte[] message = new byte[1];
+            
             for(int i = 0; i < number; i++)
             {
-                serial_port.Write(message, 0, message.Length);
+                BeginBreak(serial_port_2_pointer);
                 await Task.Delay(1);
+                EndBreak(serial_port_2_pointer);
+                await Task.Delay(1);
+            }
+            if(last_command)
+            {
+                com_port_operation_in_progress = false;
             }
             
         }
