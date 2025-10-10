@@ -86,7 +86,7 @@
             resistance_textBox.Name = "resistance_textBox";
             resistance_textBox.Size = new Size(100, 23);
             resistance_textBox.TabIndex = 4;
-            resistance_textBox.Text = "100";
+            resistance_textBox.Text = "50";
             // 
             // label1
             // 
