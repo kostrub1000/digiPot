@@ -1,5 +1,7 @@
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO.Ports;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace digiPot
@@ -7,10 +9,8 @@ namespace digiPot
     public partial class Form1 : Form
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        internal static extern bool SetCommBrake(IntPtr hFile);
+        private static extern bool EscapeCommFunction(IntPtr hFile, uint dwFunc);
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        internal static extern bool ClearCommBrake(IntPtr hFile);
 
 
         int Number_of_potentiometer { get; set; }
@@ -27,15 +27,19 @@ namespace digiPot
                 try
                 {
                     //открытие ком портов, получение указателей на них
-                    serial_port_1.PortName = (available_COM_ports_comboBox1.Text);
-                    serial_port_1.Open();                                              
-                    FileStream file_stream_1 = (FileStream)serial_port_1.BaseStream;
-                    serial_port_1_pointer = file_stream_1.SafeFileHandle.DangerousGetHandle();
+                    serial_port_1.PortName = available_COM_ports_comboBox1.Text;
+                    serial_port_1.Open();
+                    Stream serial_port_1_basestream = serial_port_1.BaseStream;
+                    FieldInfo serial_port_1_safeFileHandleField = serial_port_1_basestream.GetType().GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance);
+                    SafeFileHandle serial_port_1_safeFileHandle = (SafeFileHandle)serial_port_1_safeFileHandleField.GetValue(serial_port_1_basestream);
+                    serial_port_1_pointer = serial_port_1_safeFileHandle.DangerousGetHandle();
 
-                    serial_port_2.PortName = (available_COM_ports_comboBox2.Text);
+                    serial_port_2.PortName = available_COM_ports_comboBox2.Text;
                     serial_port_2.Open();
-                    FileStream file_stream_2 = (FileStream)serial_port_2.BaseStream;
-                    IntPtr serial_port_2_pointer = file_stream_2.SafeFileHandle.DangerousGetHandle();
+                    Stream serial_port_2_basestream = serial_port_1.BaseStream;
+                    FieldInfo serial_port_2_safeFileHandleField = serial_port_2_basestream.GetType().GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance);
+                    SafeFileHandle serial_port_2_safeFileHandle = (SafeFileHandle)serial_port_2_safeFileHandleField.GetValue(serial_port_2_basestream);
+                    serial_port_1_pointer = serial_port_2_safeFileHandle.DangerousGetHandle();
 
 
                     set_resistance_button.Enabled = true;
@@ -95,6 +99,7 @@ namespace digiPot
                 foreach (string s in ports)
                 {
                     available_COM_ports_comboBox1.Items.Add(s);
+                    available_COM_ports_comboBox2.Items.Add(s);
                 }
 
                 available_COM_ports_comboBox1.SelectedIndex = 0;
@@ -211,12 +216,12 @@ namespace digiPot
 
         void Set_to_increase_resistance()
         {
-            SetCommBrake(serial_port_1_pointer);
+            EscapeCommFunction(serial_port_1_pointer, 8);   //SETBREAK = 8, //Suspends character transmission and places the transmission line in a break state until the ClearCommBreak function is called
         }
 
         void Set_to_decrease_resistance()
         {
-            ClearCommBrake(serial_port_1_pointer);
+            EscapeCommFunction(serial_port_1_pointer, 9); //CLRBREAK = 9, //Restores character transmission and places the transmission line in a nonbreak state
         }
 
         private async Task Send_pulse_signal(int number)
@@ -224,9 +229,9 @@ namespace digiPot
             
             for(int i = 0; i < number; i++)
             {
-                SetCommBrake(serial_port_2_pointer);
+                EscapeCommFunction(serial_port_1_pointer, 8);   //SETBREAK = 8, //Suspends character transmission and places the transmission line in a break state until the ClearCommBreak function is called
                 await Task.Delay(1);
-                ClearCommBrake(serial_port_2_pointer);
+                EscapeCommFunction(serial_port_1_pointer, 9); //CLRBREAK = 9, //Restores character transmission and places the transmission line in a nonbreak state
                 await Task.Delay(1);
             }
             
